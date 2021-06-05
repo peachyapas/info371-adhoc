@@ -28,7 +28,7 @@ IMAGE_SHAPE = (imgWidth, imgHeight, Image_Channels)
 NUM_CLASSES = 10
 
 # training parameters
-EPOCHS = 25
+EPOCHS = 40
 BATCH_SIZE = 128
 np.set_printoptions(linewidth=150)
 
@@ -85,19 +85,26 @@ print(y_test.shape)
 ## Build the model
 model = Sequential()
 
-model.add(Conv2D(24, 3, activation='relu',
+model.add(Conv2D(64, 4, activation='relu',
+                 input_shape=IMAGE_SHAPE))
+model.add(BatchNormalization())
+model.add(Conv2D(64, 4, activation='relu',
                  input_shape=IMAGE_SHAPE))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=2))
 model.add(Dropout(0.25))
 
-model.add(Conv2D(48, 3, activation='relu'))
+model.add(Conv2D(32, 3, activation='relu'))
+model.add(BatchNormalization())
+model.add(Conv2D(32, 3, activation='relu'))
 model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size=2))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
-model.add(Dense(128, activation='relu'))
+model.add(Dense(256, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dense(64, activation='relu'))
 model.add(BatchNormalization())
 model.add(Dropout(0.5))
 model.add(Dense(10, activation='softmax'))
@@ -120,6 +127,7 @@ print("Test accuracy:", accuracy)
 n_rows = 5
 n_cols = 10
 iWrong = predictedClass != y_test
+print(iWrong.sum(), "miscategorized test cases out of", len(y_test))
 XWrong = X_test[iWrong]
 yWrong = y_test[iWrong]
 indices = np.random.choice(len(XWrong), n_rows*n_cols)
