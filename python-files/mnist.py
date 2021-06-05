@@ -22,13 +22,13 @@ import re
 
 # set some globals, which are used across the remaining functions
 imgWidth = 28
-Image_height = 28
+imgHeight = 28
 Image_Channels = 1
-IMAGE_SHAPE = (imgWidth, Image_height, Image_Channels)
+IMAGE_SHAPE = (imgWidth, imgHeight, Image_Channels)
 NUM_CLASSES = 10
 
 # training parameters
-EPOCHS = 17
+EPOCHS = 25
 BATCH_SIZE = 128
 np.set_printoptions(linewidth=150)
 
@@ -73,7 +73,7 @@ print("It's label:", labels[i])
 
 # convert to float32
 images = (images.astype('float32')  / 255.0)
-images = images.reshape(len(images), 28, 28, 1) # reshape it
+images = images.reshape(len(images), 28, 28, 1) # reshape it to 3D tensor array
 X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size = 0.2, random_state=1)
 
 # split looks right
@@ -85,11 +85,21 @@ print(y_test.shape)
 ## Build the model
 model = Sequential()
 
-# should feed in input shape [28,28]
-# only looking at image height and width
-model.add(Flatten(input_shape=[28,28,1]))
+model.add(Conv2D(24, 3, activation='relu',
+                 input_shape=IMAGE_SHAPE))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=2))
+model.add(Dropout(0.25))
+
+model.add(Conv2D(48, 3, activation='relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=2))
+model.add(Dropout(0.25))
+
+model.add(Flatten())
 model.add(Dense(128, activation='relu'))
-model.add(Dense(50, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
 model.add(Dense(10, activation='softmax'))
 
 model.summary()
@@ -106,19 +116,23 @@ predictedClass = prediction.argmax(axis=-1)
 accuracy = np.mean(y_test.ravel() == predictedClass.ravel())
 print("Test accuracy:", accuracy)
 
+## Plot miscategorized images
 n_rows = 5
 n_cols = 10
-indices = np.random.choice(len(predictedClass), n_rows*n_cols)
+iWrong = predictedClass != y_test
+XWrong = X_test[iWrong]
+yWrong = y_test[iWrong]
+indices = np.random.choice(len(XWrong), n_rows*n_cols)
 plt.figure(figsize=(n_cols * 1.2, n_rows * 1.2))
 for row in range(n_rows):
     for col in range(n_cols):
         index = n_cols * row + col
         plt.subplot(n_rows, n_cols, index + 1)
-        X = X_test[[indices[index]]]
-        img = X.reshape(imgWidth, Image_height)
+        X = XWrong[[indices[index]]]
+        img = X.reshape(imgWidth, imgHeight)
         plt.imshow(img, cmap="binary", interpolation="nearest")
         pred = np.argmax(model.predict(X), axis=-1)[0]
-        value = y_test[indices[index]]
+        value = yWrong[indices[index]]
         plt.title("p: {} a: {}".format(pred, value))
         plt.axis('off')
         
